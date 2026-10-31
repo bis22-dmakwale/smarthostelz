@@ -55,7 +55,7 @@ export default function AdminBookingsPage() {
   }
 
   return <div className="grid">
-    <div className="page-intro"><div><div className="page-eyebrow">Administration</div><h2 className="page-heading">Hostel bookings</h2><p className="page-description">Set the booking window and rent amount. Paid, eligible students are automatically assigned and approved when they book.</p></div></div>
+    <div className="page-intro"><div><div className="page-eyebrow">Administration</div><h2 className="page-heading">Hostel bookings</h2><p className="page-description">Configure the booking window and rent amount. Students are assigned and approved automatically, so administrators do not need to review each booking.</p></div></div>
     {error && <p role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
     {bookingWindow.error && <p role="alert" style={{ color: "var(--danger)" }}>{bookingWindow.error}</p>}
     <Card>

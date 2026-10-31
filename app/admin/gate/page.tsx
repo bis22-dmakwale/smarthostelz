@@ -30,7 +30,7 @@ export default function GatePage() {
   }
 
   return <div className="grid">
-    <div className="page-intro"><div><div className="page-eyebrow">Gate operations</div><h2 className="page-heading">Visitor entries</h2><p className="page-description">Record each non-resident entry and review recent visitor records.</p></div></div>
+    <div className="page-intro"><div><div className="page-eyebrow">Hostel entrance</div><h2 className="page-heading">Visitor entries</h2><p className="page-description">Record each non-resident hostel entrance and review recent visitor records.</p></div></div>
     <div className="grid grid-2">
       <Card>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}><UserRound size={20} color="var(--primary)" /><h2 className="section-title" style={{ margin: 0 }}>Visitor entry</h2></div>

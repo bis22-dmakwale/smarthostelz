@@ -82,7 +82,7 @@ export default function GateQrCard() {
   }
 
   return <Card className="gate-qr-print">
-    <div className="gate-qr-heading"><div><p className="page-eyebrow">Gate access</p><h2 className="section-title" style={{ margin: 0 }}>Official hostel gate QR</h2></div></div>
+    <div className="gate-qr-heading"><div><p className="page-eyebrow">Gate access</p><h2 className="section-title" style={{ margin: 0 }}>Official hostel entrance QR codes</h2></div></div>
     <p className="muted" style={{ marginTop: 7 }}>Students scan this code from their portal to record check-in or check-out.</p>
     {error && <p role="alert" style={{ color: "var(--danger)", marginTop: 12 }}>{error}</p>}
     {loading && <p className="muted" style={{ marginTop: 12 }}>Loading hostel gate QR codes…</p>}

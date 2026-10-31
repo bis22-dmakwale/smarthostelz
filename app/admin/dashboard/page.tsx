@@ -56,7 +56,7 @@ export default function AdminDashboard() {
         <Card>
           <div className="dashboard-card-heading">
             <div>
-              <h2 className="section-title" style={{ margin: 0 }}>Recent gate activity</h2>
+              <h2 className="section-title" style={{ margin: 0 }}>Recent hostel entrance activity</h2>
               <p className="muted" style={{ marginTop: 5 }}>Latest student check-ins and check-outs</p>
             </div>
             <span className="quick-link-icon"><Activity size={19} /></span>
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
           }) : (
             <div className="activity-empty">
               <Activity size={22} />
-              <p>{loading ? "Loading recent activity…" : "No student gate activity recorded yet."}</p>
+              <p>{loading ? "Loading recent activity…" : "No student hostel entrance activity recorded yet."}</p>
             </div>
           )}
         </Card>

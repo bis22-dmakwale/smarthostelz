@@ -33,7 +33,7 @@ export default function StudentDashboard() {
           </div>
           <div className="student-room-status">
             <Badge status={status === "checked-in" ? "success" : status === "checked-out" ? "info" : "warning"}>
-              {status === "none" ? "No recent gate activity" : status === "checked-in" ? "Currently checked in" : "Currently checked out"}
+              {status === "none" ? "No recent entrance activity" : status === "checked-in" ? "Currently checked in" : "Currently checked out"}
             </Badge>
           </div>
           {assignment.error && <p role="alert" className="student-room-error">{assignment.error}</p>}
@@ -71,7 +71,7 @@ export default function StudentDashboard() {
         {[
           { href: "/student/complaints", icon: VolumeX, title: "Anonymous noise report", subtitle: "Send a private report to the hostel office." },
           { href: "/student/receipts", icon: ReceiptText, title: "Payment receipts", subtitle: "View your payment history and tracking numbers." },
-          { href: "/student/checkin", icon: ScanLine, title: "Gate activity", subtitle: "Review your digital hostel visit history." },
+          { href: "/student/checkin", icon: ScanLine, title: "Hostel entrance activity", subtitle: "Review your digital hostel visit history." },
         ].map((item) => (
           <Link key={item.href} href={item.href} className="service-card-link">
             <Card className="service-card">

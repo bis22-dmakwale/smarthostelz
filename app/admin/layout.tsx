@@ -8,7 +8,7 @@ const nav: NavItem[] = [
   { href: "/admin/dashboard", label: "Home", icon: "dashboard", primary: true },
   { href: "/admin/hostels", label: "Hostels", icon: "hostels", crucial: true },
   { href: "/admin/bookings", label: "Bookings", icon: "bookings", primary: true },
-  { href: "/admin/gate", label: "Gate scan", icon: "gate", crucial: true },
+  { href: "/admin/gate", label: "Hostel entrance", icon: "gate", crucial: true },
   { href: "/admin/credentials", label: "Credentials", icon: "credentials" },
   { href: "/admin/students", label: "Students", icon: "students", crucial: true },
   { href: "/admin/issues", label: "Issues", icon: "issues" },

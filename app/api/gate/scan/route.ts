@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       hostel: assignment.hostel, room: assignment.room,
     }, { status: 201 });
   } catch (error) {
-    return Response.json({ error: error instanceof Response ? await error.text() : "Unable to record this gate scan." }, {
+    return Response.json({ error: error instanceof Response ? await error.text() : "Unable to record this hostel entrance scan." }, {
       status: error instanceof Response ? error.status : 500,
     });
   }

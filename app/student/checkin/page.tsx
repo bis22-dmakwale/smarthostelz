@@ -42,7 +42,7 @@ export default function CheckinPage() {
             await refreshHistory();
             setError("");
           }).catch((cause: unknown) => {
-            setError(cause instanceof Error ? cause.message : "Unable to record this gate scan.");
+            setError(cause instanceof Error ? cause.message : "Unable to record this hostel entrance scan.");
           }).finally(() => setScanning(false));
         });
         stopScanner = () => controls.stop();
@@ -65,7 +65,7 @@ export default function CheckinPage() {
   return (
     <div className="grid">
       <Card style={{ textAlign: "center", padding: 28 }}>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10 }}><Camera size={20} color="var(--primary)" /><h2 style={{ fontWeight: 800, fontSize: "1.1rem" }}>Scan hostel gate QR</h2></div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10 }}><Camera size={20} color="var(--primary)" /><h2 style={{ fontWeight: 800, fontSize: "1.1rem" }}>Scan hostel entrance QR</h2></div>
         <h2 style={{ fontWeight: 800, fontSize: "1.1rem" }}>Digital check-in / check-out</h2>
         <p className="muted" style={{ margin: "8px 0 16px" }}>
           {assignment.data ? `${assignment.data.hostel} · Room ${assignment.data.room}` : "Your active room assignment is required."}
@@ -87,7 +87,7 @@ export default function CheckinPage() {
             {currentStatus === "none" ? "No activity" : currentStatus}
           </Badge>
         </div>
-        <h3 className="section-title">Recent gate activity</h3>
+        <h3 className="section-title">Recent hostel entrance activity</h3>
         {history.loading && <p className="muted">Loading activity…</p>}
         {!history.loading && !history.data?.length && <p className="muted">No check-in records yet.</p>}
         {history.data?.map((event) => (

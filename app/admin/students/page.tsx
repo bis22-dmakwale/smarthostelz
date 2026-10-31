@@ -17,7 +17,7 @@ export default function StudentsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".85rem", minWidth: 620 }}>
           <thead>
             <tr style={{ background: "var(--primary-light)", textAlign: "left" }}>
-              {["Student", "Hostel / Room", "Latest gate activity"].map((heading) => (
+              {["Student", "Hostel / Room", "Latest hostel entrance activity"].map((heading) => (
                 <th key={heading} style={{ padding: "12px 14px", color: "var(--primary)" }}>{heading}</th>
               ))}
             </tr>

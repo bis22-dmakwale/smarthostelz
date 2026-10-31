@@ -53,7 +53,7 @@ export default function StudentBookingsPage() {
 
   return (
     <div className="grid">
-      <div className="page-intro"><div><div className="page-eyebrow">Accommodation</div><h2 className="page-heading">Hostel booking</h2><p className="page-description">Book during the office-configured window. Monthly rent is paid after your room is assigned.</p></div></div>
+      <div className="page-intro"><div><div className="page-eyebrow">Accommodation</div><h2 className="page-heading">Hostel booking</h2><p className="page-description">Bookings are approved automatically during the office-configured window. Monthly rent is paid after your room is assigned.</p></div></div>
       {bookingWindow.error && <p role="alert" style={{ color: "var(--danger)" }}>{bookingWindow.error}</p>}
       <Card>
         <h2 className="section-title" style={{ marginTop: 0 }}>Booking window</h2>
@@ -65,6 +65,9 @@ export default function StudentBookingsPage() {
             {new Date(windowData.settings.opensAt).toLocaleString()} – {new Date(windowData.settings.closesAt).toLocaleString()}
           </p>
           <p style={{ marginTop: 12 }}><strong>Hostel rent:</strong> {mkw(windowData.settings.monthlyRent)}</p>
+          <p className="muted" style={{ marginTop: 10 }}>
+            <strong>Automatic allocation:</strong> the system randomly selects an eligible room with an available bed, then confirms your booking immediately. This keeps allocation fair, avoids manual approval queues, and prevents rooms from being overbooked.
+          </p>
           <p style={{ marginTop: 10 }}><strong>Your bank account number:</strong> <span style={{ fontFamily: "monospace" }}>{windowData.student.bankAccountNo ?? "Not assigned — contact the hostel office"}</span></p>
           {!eligible && <p role="alert" style={{ color: "var(--danger)", marginTop: 8 }}>Your student eligibility details are incomplete. Contact the hostel office.</p>}
           {windowData.alreadyBooked && <p className="muted" style={{ marginTop: 8 }}>You already have an approved booking for this academic year.</p>}
