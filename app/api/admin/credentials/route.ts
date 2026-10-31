@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { generateBankAccountNumber } from "@/lib/bank-account";
 import { hashPassword } from "@/lib/password";
 import { requireUser } from "@/lib/server-auth";
 
@@ -36,9 +37,13 @@ export async function POST(request: Request) {
         email: values.email,
         regNo: values.regNo,
         gender: values.gender,
+        bankAccountNo: generateBankAccountNumber(),
         role: "student",
         passwordHash: hashPassword(password),
-      }).returning({ id: users.id, name: users.name, email: users.email, regNo: users.regNo, gender: users.gender });
+      }).returning({
+        id: users.id, name: users.name, email: users.email, regNo: users.regNo,
+        gender: users.gender, bankAccountNo: users.bankAccountNo,
+      });
       return created;
     });
     return Response.json({ ...student, password }, { status: 201 });
@@ -56,7 +61,7 @@ export async function GET() {
     await requireUser("admin");
     const students = await getDb().select({
       id: users.id, name: users.name, email: users.email, regNo: users.regNo,
-      gender: users.gender,
+      gender: users.gender, bankAccountNo: users.bankAccountNo,
     }).from(users).where(eq(users.role, "student")).orderBy(users.name);
     return Response.json(students);
   } catch (error) {

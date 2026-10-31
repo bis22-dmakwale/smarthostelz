@@ -1,7 +1,8 @@
 import { and, count, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "@/lib/db";
-import { bookingApplications, hostelRooms, hostels, roomAssignments, users } from "@/lib/db/schema";
+import { bookingApplications, bookingSettings, hostelRooms, hostels, roomAssignments, users } from "@/lib/db/schema";
+import { sendBookingConfirmation } from "@/lib/booking-email";
 import { requireUser } from "@/lib/server-auth";
 
 export async function GET() {
@@ -41,106 +42,91 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const user = await requireUser("student");
-    const body = await request.json() as Record<string, unknown>;
-    if (typeof body.semester !== "string" || body.semester.trim().length < 3 || body.semester.trim().length > 80) {
-      return Response.json({ error: "Enter a valid semester for this application." }, { status: 400 });
-    }
-    if (!user.regNo) return Response.json({ error: "Your student registration number is missing. Contact the hostel office before applying." }, { status: 409 });
-    if (user.gender !== "male" && user.gender !== "female") return Response.json({ error: "Your verified hostel eligibility is missing. Contact the hostel office before applying." }, { status: 409 });
+    if (!user.regNo) return Response.json({ error: "Your registration number is missing. Contact the hostel office." }, { status: 409 });
+    if (user.gender !== "male" && user.gender !== "female") return Response.json({ error: "Your verified hostel eligibility is missing. Contact the hostel office." }, { status: 409 });
+    const studentGender = user.gender;
 
     const db = getDb();
-    const [application] = await db.insert(bookingApplications).values({
-      studentId: user.id,
-      semester: body.semester.trim(),
-      gender: user.gender,
-    }).returning();
-    return Response.json(application, { status: 201 });
-  } catch (error) {
-    if (error instanceof Response) return Response.json({ error: await error.text() }, { status: error.status });
-    if (error instanceof Error && error.message.toLowerCase().includes("unique")) {
-      return Response.json({ error: "An application already exists for that semester." }, { status: 409 });
-    }
-    console.error("Booking application failed:", error);
-    return Response.json({ error: "Unable to submit this booking application." }, { status: 500 });
-  }
-}
+    const booking = await db.transaction(async (tx) => {
+      const [settings] = await tx.select().from(bookingSettings).where(eq(bookingSettings.id, "current")).limit(1);
+      const now = new Date();
+      if (!settings) throw new Response("The hostel office has not configured a booking window yet.", { status: 409 });
+      if (now < settings.opensAt || now > settings.closesAt) throw new Response("Booking is currently closed.", { status: 409 });
 
-export async function PATCH(request: Request) {
-  try {
-    await requireUser("admin");
-    const body = await request.json() as Record<string, unknown>;
-    if (typeof body.id !== "string" || !["approved", "rejected", "waitlisted"].includes(String(body.status))) {
-      return Response.json({ error: "Choose an application and a valid decision." }, { status: 400 });
-    }
-    const db = getDb();
-    const result = await db.transaction(async (tx) => {
-      const [application] = await tx.select().from(bookingApplications)
-        .where(eq(bookingApplications.id, body.id as string)).limit(1);
-      if (!application) throw new Response("Booking application not found.", { status: 404 });
-      if (!["pending", "waitlisted"].includes(application.status)) {
-        throw new Response("This application has already been reviewed.", { status: 409 });
-      }
-      if (body.status !== "approved") {
-        const [updated] = await tx.update(bookingApplications).set({
-          status: body.status as string, reviewedAt: new Date(),
-        }).where(and(eq(bookingApplications.id, application.id), eq(bookingApplications.status, application.status))).returning();
-        if (!updated) throw new Response("This application has already been reviewed.", { status: 409 });
-        return updated;
-      }
+      const [existing] = await tx.select({ id: bookingApplications.id }).from(bookingApplications).where(and(
+        eq(bookingApplications.studentId, user.id),
+        eq(bookingApplications.academicYear, settings.academicYear),
+        eq(bookingApplications.status, "approved"),
+      )).limit(1);
+      if (existing) throw new Response(`You already have a hostel booking for academic year ${settings.academicYear}.`, { status: 409 });
 
-      const [student] = await tx.select().from(users).where(eq(users.id, application.studentId)).limit(1);
-      if (!student?.regNo) throw new Response("This student has no registration number and is not eligible for allocation.", { status: 409 });
       const candidates = await tx.select({
         hostelId: hostels.id, hostelName: hostels.name,
         roomId: hostelRooms.id, roomNo: hostelRooms.roomNo, capacity: hostelRooms.capacity,
       }).from(hostels).innerJoin(hostelRooms, eq(hostelRooms.hostelId, hostels.id))
-        .where(and(eq(hostels.gender, application.gender), eq(hostels.active, true), eq(hostelRooms.active, true)))
-        .orderBy(hostels.name, hostelRooms.roomNo);
+        .where(and(
+          eq(hostels.gender, studentGender), eq(hostels.active, true), eq(hostelRooms.active, true),
+        )).orderBy(sql`random()`);
 
-      const lockedHostels = new Set<string>();
+      let selected: (typeof candidates)[number] | undefined;
       for (const candidate of candidates) {
-        if (!lockedHostels.has(candidate.hostelId)) {
-          await tx.execute(sql`SELECT id FROM hostel_rooms WHERE hostel_id = ${candidate.hostelId} AND active = true ORDER BY room_no FOR UPDATE`);
-          lockedHostels.add(candidate.hostelId);
-        }
-        const [occupied] = await tx.select({ value: count() }).from(roomAssignments)
-          .where(and(
-            eq(roomAssignments.active, true), ne(roomAssignments.studentId, application.studentId),
-            or(
-              eq(roomAssignments.roomId, candidate.roomId),
-              and(isNull(roomAssignments.roomId), eq(roomAssignments.hostel, candidate.hostelName), eq(roomAssignments.room, candidate.roomNo)),
-            ),
-          ));
-        if (occupied.value >= candidate.capacity) continue;
-
-        const confirmationNo = `MUB-HT-${randomBytes(5).toString("hex").toUpperCase()}`;
-        const [allocated] = await tx.update(bookingApplications).set({
-          status: "approved", hostelId: candidate.hostelId, roomId: candidate.roomId,
-          confirmationNo, reviewedAt: new Date(),
-        }).where(and(eq(bookingApplications.id, application.id), eq(bookingApplications.status, application.status))).returning();
-        if (!allocated) throw new Response("This application has already been reviewed.", { status: 409 });
-        await tx.update(roomAssignments).set({ active: false }).where(and(
-          eq(roomAssignments.studentId, application.studentId), eq(roomAssignments.active, true),
+        await tx.execute(sql`SELECT id FROM hostel_rooms WHERE id = ${candidate.roomId} FOR UPDATE`);
+        const [occupied] = await tx.select({ value: count() }).from(roomAssignments).where(and(
+          eq(roomAssignments.active, true), ne(roomAssignments.studentId, user.id), or(
+            eq(roomAssignments.roomId, candidate.roomId),
+            and(isNull(roomAssignments.roomId), eq(roomAssignments.hostel, candidate.hostelName), eq(roomAssignments.room, candidate.roomNo)),
+          ),
         ));
-        await tx.insert(roomAssignments).values({
-          studentId: application.studentId, applicationId: application.id, roomId: candidate.roomId,
-          hostel: candidate.hostelName, room: candidate.roomNo,
-        });
-        return allocated;
+        if (occupied.value < candidate.capacity) {
+          selected = candidate;
+          break;
+        }
       }
+      if (!selected) throw new Response("No suitable hostel room has an available bed. Contact the hostel office.", { status: 409 });
 
-      const [waitlisted] = await tx.update(bookingApplications).set({
-        status: "waitlisted", reviewedAt: new Date(),
-      }).where(and(eq(bookingApplications.id, application.id), eq(bookingApplications.status, application.status))).returning();
-      return waitlisted;
+      const confirmationNo = `MUB-HT-${randomBytes(5).toString("hex").toUpperCase()}`;
+      const [application] = await tx.insert(bookingApplications).values({
+        studentId: user.id,
+        semester: `Academic Year ${settings.academicYear}`,
+        academicYear: settings.academicYear,
+        gender: studentGender,
+        status: "approved",
+        hostelId: selected.hostelId,
+        roomId: selected.roomId,
+        confirmationNo,
+        reviewedAt: now,
+      }).returning();
+
+      await tx.update(roomAssignments).set({ active: false }).where(and(
+        eq(roomAssignments.studentId, user.id), eq(roomAssignments.active, true),
+      ));
+      await tx.insert(roomAssignments).values({
+        studentId: user.id, applicationId: application.id, roomId: selected.roomId,
+        hostel: selected.hostelName, room: selected.roomNo,
+      });
+      return { application, hostel: selected.hostelName, room: selected.roomNo };
     });
-    return Response.json(result);
+
+    let emailSent = false;
+    try {
+      emailSent = await sendBookingConfirmation({
+        email: user.email, name: user.name,
+        academicYear: booking.application.academicYear!, hostel: booking.hostel,
+        room: booking.room, confirmationNo: booking.application.confirmationNo!,
+      });
+    } catch (error) {
+      console.error("Booking confirmation email failed:", error);
+    }
+    return Response.json({ ...booking.application, hostelName: booking.hostel, roomNo: booking.room, emailSent }, { status: 201 });
   } catch (error) {
     if (error instanceof Response) return Response.json({ error: await error.text() }, { status: error.status });
-    console.error("Booking review failed:", error);
-    return Response.json({ error: "Unable to review this booking application." }, { status: 500 });
+    if (error && typeof error === "object" && "code" in error && error.code === "23505") {
+      return Response.json({ error: "You already have a hostel booking for this academic year." }, { status: 409 });
+    }
+    console.error("Booking failed:", error);
+    return Response.json({ error: "Unable to complete your booking." }, { status: 500 });
   }
 }

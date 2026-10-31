@@ -3,6 +3,7 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import { users } from "../lib/db/schema";
+import { generateBankAccountNumber } from "../lib/bank-account";
 import { hashPassword } from "../lib/password";
 
 const connectionString = process.env.DATABASE_URL;
@@ -22,8 +23,13 @@ async function seedUser(input: {
   const email = input.email.trim().toLowerCase();
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing) {
-    if (input.gender && !existing.gender) {
-      await db.update(users).set({ gender: input.gender }).where(eq(users.id, existing.id));
+    if ((input.gender && !existing.gender) || (input.role === "student" && !existing.bankAccountNo)) {
+      await db.update(users).set({
+        ...(input.gender && !existing.gender ? { gender: input.gender } : {}),
+        ...(input.role === "student" && !existing.bankAccountNo
+          ? { bankAccountNo: generateBankAccountNumber() }
+          : {}),
+      }).where(eq(users.id, existing.id));
     }
     return existing;
   }
@@ -34,6 +40,7 @@ async function seedUser(input: {
     role: input.role,
     regNo: input.regNo,
     gender: input.gender,
+    bankAccountNo: input.role === "student" ? generateBankAccountNumber() : undefined,
   }).returning();
   return created;
 }

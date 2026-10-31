@@ -1,6 +1,7 @@
 // components/layout/Header.tsx
 "use client";
 import { useMemo, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { sessionSnapshot, subscribeSession } from "@/lib/auth";
 import type { User } from "@/lib/types";
@@ -20,14 +21,14 @@ export default function Header({ title }: { title: string }) {
         <p className="topbar-caption">MUBAS Smart Hostels · Residence services</p>
       </div>
       <div className="header-tools">
-        <div className="profile">
+        <Link href={user?.role === "admin" ? "/admin/settings" : "/student/settings"} className="profile header-profile-link" title="Account settings">
           <span className="avatar" aria-hidden="true">{initials}</span>
           <div>
             <div className="profile-name">{user?.name ?? "Hostel account"}</div>
             <div className="profile-caption">{user?.role === "admin" ? "Administrator" : user?.regNo ?? "Student"}</div>
           </div>
           <ShieldCheck size={17} color="var(--primary)" aria-label="Secure account" />
-        </div>
+        </Link>
         <SignOutButton className="header-signout" />
       </div>
     </header>

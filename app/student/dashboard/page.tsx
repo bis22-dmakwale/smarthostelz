@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import { ArrowRight, ArrowUpRight, ClipboardCheck, PackageSearch, ScanLine, Wrench, ArrowLeftRight, VolumeX, ReceiptText, House } from "lucide-react";
+import { ArrowRight, ArrowUpRight, PackageSearch, ScanLine, Wrench, ArrowLeftRight, VolumeX, ReceiptText, House } from "lucide-react";
 import { useApiResource } from "@/components/hostel/useApiResource";
 
 type Assignment = { hostel: string; room: string } | null;
@@ -69,7 +69,6 @@ export default function StudentDashboard() {
       </div>
       <div className="grid grid-2 student-service-grid">
         {[
-          { href: "/student/inspections", icon: ClipboardCheck, title: "Room inspections", subtitle: "Record room condition with notes and photos." },
           { href: "/student/complaints", icon: VolumeX, title: "Anonymous noise report", subtitle: "Send a private report to the hostel office." },
           { href: "/student/receipts", icon: ReceiptText, title: "Payment receipts", subtitle: "View your payment history and tracking numbers." },
           { href: "/student/checkin", icon: ScanLine, title: "Gate activity", subtitle: "Review your digital hostel visit history." },

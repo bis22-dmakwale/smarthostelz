@@ -20,6 +20,15 @@ export const foundStatus = pgEnum("found_status", ["open", "claimed", "returned"
 export const foundItemType = pgEnum("found_item_type", ["lost", "found"]);
 export const paymentMethod = pgEnum("payment_method", ["Airtel Money", "TNM Mpamba", "Bank", "Cash"]);
 
+export const bookingSettings = pgTable("booking_settings", {
+  id: text("id").primaryKey().default("current"),
+  academicYear: text("academic_year").notNull(),
+  opensAt: timestamp("opens_at", { withTimezone: true }).notNull(),
+  closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
+  monthlyRent: integer("monthly_rent").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const hostels = pgTable("hostels", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
@@ -41,6 +50,8 @@ export const bookingApplications = pgTable("booking_applications", {
   id: uuid("id").defaultRandom().primaryKey(),
   studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   semester: text("semester").notNull(),
+  bookingMonth: integer("booking_month"),
+  academicYear: text("academic_year"),
   gender: text("gender").notNull(),
   status: text("status").notNull().default("pending"),
   hostelId: uuid("hostel_id").references(() => hostels.id, { onDelete: "set null" }),
@@ -48,7 +59,12 @@ export const bookingApplications = pgTable("booking_applications", {
   confirmationNo: text("confirmation_no").unique(),
   submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-}, (table) => [uniqueIndex("booking_applications_student_semester_idx").on(table.studentId, table.semester)]);
+}, (table) => [
+  uniqueIndex("booking_applications_student_semester_idx").on(table.studentId, table.semester),
+  uniqueIndex("booking_applications_student_period_idx").on(table.studentId, table.bookingMonth, table.academicYear),
+  uniqueIndex("booking_applications_student_academic_year_idx").on(table.studentId, table.academicYear)
+    .where(sql`${table.academicYear} IS NOT NULL AND ${table.status} = 'approved'`),
+]);
 
 export const payments = pgTable("payments", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -63,6 +79,20 @@ export const payments = pgTable("payments", {
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
 }, (table) => [uniqueIndex("payments_method_reference_idx").on(table.method, table.reference)]);
 
+export const hostelBookingPayments = pgTable("hostel_booking_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  academicYear: text("academic_year").notNull(),
+  paymentMonth: text("payment_month").notNull(),
+  bankAccountNo: text("bank_account_no").notNull(),
+  amount: integer("amount").notNull(),
+  method: paymentMethod("method").notNull().default("Bank"),
+  reference: text("reference").notNull().unique(),
+  paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("hostel_booking_payments_student_month_idx").on(table.studentId, table.academicYear, table.paymentMonth),
+]);
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -71,6 +101,16 @@ export const users = pgTable("users", {
   role: userRole("role").notNull().default("student"),
   regNo: text("reg_no").unique(),
   gender: text("gender"),
+  bankAccountNo: text("bank_account_no").unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

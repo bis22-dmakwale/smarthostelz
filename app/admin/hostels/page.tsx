@@ -74,7 +74,7 @@ export default function HostelsPage() {
   const hostels = inventory.data ?? [];
   return (
     <div className="grid">
-      <div className="page-intro"><div><div className="page-eyebrow">Accommodation</div><h2 className="page-heading">Hostels and room capacity</h2><p className="page-description">Configure hostel eligibility and bed counts used by automatic allocation.</p></div></div>
+      <div className="page-intro"><div><div className="page-eyebrow">Accommodation</div><h2 className="page-heading">Hostels and room capacity</h2><p className="page-description">Configure hostel eligibility and bed counts for administrator assignments.</p></div></div>
       {error && <p role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
       <div className="grid grid-2">
         <Card>

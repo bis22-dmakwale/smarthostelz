@@ -67,6 +67,7 @@ export default function LoginPage() {
               <Input type="password" autoComplete="current-password" placeholder="Enter your password" value={password}
                      onChange={(event) => setPassword(event.target.value)} required />
             </label>
+            <p className="login-link-row" style={{ margin: 0, textAlign: "right" }}><Link href="/forgot-password">Forgot password?</Link></p>
             {error && <p role="alert" className="login-error">{error}</p>}
             <Button type="submit" disabled={submitting}>
               <LockKeyhole size={16} />

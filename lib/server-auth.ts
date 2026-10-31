@@ -54,7 +54,8 @@ export async function currentUser(): Promise<User | null> {
   const userId = verifySessionToken(token);
   if (!userId) return null;
   const [user] = await getDb().select({
-    id: users.id, name: users.name, email: users.email, role: users.role, regNo: users.regNo, gender: users.gender,
+    id: users.id, name: users.name, email: users.email, role: users.role,
+    regNo: users.regNo, gender: users.gender, bankAccountNo: users.bankAccountNo,
   }).from(users).where(eq(users.id, userId)).limit(1);
   return user ? { ...user, regNo: user.regNo ?? undefined } : null;
 }

@@ -7,8 +7,8 @@ import Badge from "@/components/ui/Badge";
 import { useApiResource } from "@/components/hostel/useApiResource";
 import { apiRequest } from "@/lib/api";
 
-type Credential = { name: string; email: string; regNo: string; gender: string; password: string };
-type StudentProfile = { id: string; name: string; regNo: string | null; gender: string | null };
+type Credential = { name: string; email: string; regNo: string; gender: string; bankAccountNo: string; password: string };
+type StudentProfile = { id: string; name: string; regNo: string | null; gender: string | null; bankAccountNo: string | null };
 
 export default function CredentialsPage() {
   const [name, setName] = useState("");
@@ -63,22 +63,25 @@ export default function CredentialsPage() {
           <div style={{ display: "flex", justifyContent: "space-between" }}><strong>{credential.name}</strong><Badge status="success">Account created</Badge></div>
           <p className="muted">{credential.regNo} · {credential.email}</p>
           <p className="muted">Verified eligibility: {credential.gender}</p>
+          <p style={{ fontFamily: "monospace", marginTop: 8 }}>Bank account number: <strong>{credential.bankAccountNo}</strong></p>
           <p style={{ fontFamily: "monospace", marginTop: 8 }}>Temporary password: <strong>{credential.password}</strong></p>
         </Card>
       )}
       <Card>
-        <h2 className="section-title" style={{ marginTop: 0 }}>Existing accounts without eligibility</h2>
-        <p className="muted" style={{ marginBottom: 10 }}>Verify these records against student documentation before booking applications can be submitted.</p>
-        {students.data?.filter((student) => !student.gender).map((student) => (
+        <h2 className="section-title" style={{ marginTop: 0 }}>Student bank account numbers</h2>
+        <p className="muted" style={{ marginBottom: 10 }}>Use the assigned account number to record simulated bank payments. Verify missing hostel eligibility before booking.</p>
+        {students.data?.map((student) => (
           <div key={student.id} className="activity-row" style={{ alignItems: "center", gap: 10 }}>
-            <div style={{ flex: 1 }}><strong>{student.name}</strong><p className="muted">{student.regNo ?? "No registration number"}</p></div>
-            <select className="input" aria-label={`Verified hostel eligibility for ${student.name}`} value={eligibility[student.id] ?? ""} onChange={(event) => setEligibility((values) => ({ ...values, [student.id]: event.target.value }))} style={{ maxWidth: 180 }}>
-              <option value="">Select eligibility</option><option value="male">Male</option><option value="female">Female</option>
-            </select>
-            <Button disabled={!eligibility[student.id]} onClick={() => void saveEligibility(student)}>Save</Button>
+            <div style={{ flex: 1 }}><strong>{student.name}</strong><p className="muted">{student.regNo ?? "No registration number"} · Account {student.bankAccountNo ?? "not assigned"}</p></div>
+            {!student.gender && <>
+              <select className="input" aria-label={`Verified hostel eligibility for ${student.name}`} value={eligibility[student.id] ?? ""} onChange={(event) => setEligibility((values) => ({ ...values, [student.id]: event.target.value }))} style={{ maxWidth: 180 }}>
+                <option value="">Select eligibility</option><option value="male">Male</option><option value="female">Female</option>
+              </select>
+              <Button disabled={!eligibility[student.id]} onClick={() => void saveEligibility(student)}>Save</Button>
+            </>}
           </div>
         ))}
-        {!students.loading && !students.data?.some((student) => !student.gender) && <p className="muted">All student accounts have recorded eligibility.</p>}
+        {!students.loading && !students.data?.length && <p className="muted">No student accounts yet.</p>}
       </Card>
     </div>
   );

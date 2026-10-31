@@ -3,8 +3,6 @@ import { getDb } from "@/lib/db";
 import { bookingApplications, payments, receipts, users } from "@/lib/db/schema";
 import { requireUser } from "@/lib/server-auth";
 
-const methods = ["Airtel Money", "TNM Mpamba", "Bank"] as const;
-
 export async function GET() {
   try {
     const user = await requireUser();
@@ -31,27 +29,12 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    const user = await requireUser("student");
-    const body = await request.json() as Record<string, unknown>;
-    if (typeof body.applicationId !== "string" || !Number.isInteger(body.amount) || Number(body.amount) < 1
-      || !methods.includes(body.method as typeof methods[number])
-      || typeof body.reference !== "string" || body.reference.trim().length < 3 || body.reference.length > 150
-      || typeof body.proofPhoto !== "string" || !/^data:image\/(jpeg|png|webp);base64,/.test(body.proofPhoto) || body.proofPhoto.length > 950_000) {
-      return Response.json({ error: "Select an allocated booking, enter the payment amount and reference, and upload proof (JPEG, PNG, or WebP, max 700 KB)." }, { status: 400 });
-    }
-    const db = getDb();
-    const [application] = await db.select().from(bookingApplications).where(and(
-      eq(bookingApplications.id, body.applicationId), eq(bookingApplications.studentId, user.id),
-      eq(bookingApplications.status, "approved"),
-    )).limit(1);
-    if (!application) return Response.json({ error: "Only an approved booking can be linked to a payment submission." }, { status: 409 });
-    const [payment] = await db.insert(payments).values({
-      studentId: user.id, applicationId: application.id, amount: Number(body.amount),
-      method: body.method as typeof methods[number], reference: body.reference.trim(), proofPhoto: body.proofPhoto,
-    }).returning();
-    return Response.json(payment, { status: 201 });
+    await requireUser("student");
+    return Response.json({
+      error: "Student payment submissions are disabled. Hostel payment status is recorded through the bank simulator and shown on the booking page.",
+    }, { status: 410 });
   } catch (error) {
     if (error instanceof Response) return Response.json({ error: await error.text() }, { status: error.status });
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) {

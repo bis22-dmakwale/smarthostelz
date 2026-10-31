@@ -1,60 +1,45 @@
 "use client";
-import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
-import Input from "@/components/ui/Input";
-import { apiRequest } from "@/lib/api";
-import { readImage } from "@/components/hostel/readImage";
 import { useApiResource } from "@/components/hostel/useApiResource";
 import { mkw } from "@/lib/format";
 
 type Receipt = { id: string; trackingNo: string; amount: number; method: string; paidAt: string; status: string };
-type BookingRow = { application: { id: string; semester: string; status: string } };
-type PaymentRow = { payment: { id: string; amount: number; method: string; reference: string; status: string }; semester: string };
+type BookingWindow = {
+  settings: { academicYear: string; monthlyRent: number } | null;
+  student: { bankAccountNo: string | null };
+  alreadyBooked: boolean;
+  currentMonth: string;
+  currentMonthPayment: { amount: number; reference: string; paidAt: string } | null;
+  rentPayments: { paymentMonth: string; amount: number; reference: string; paidAt: string }[];
+};
 
 export default function ReceiptsPage() {
   const receipts = useApiResource<Receipt[]>("/api/hostel/receipts");
-  const bookings = useApiResource<BookingRow[]>("/api/bookings");
-  const payments = useApiResource<PaymentRow[]>("/api/payments");
-  const [applicationId, setApplicationId] = useState("");
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState("Airtel Money");
-  const [reference, setReference] = useState("");
-  const [proofPhoto, setProofPhoto] = useState("");
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  async function submitPayment(event: React.FormEvent) {
-    event.preventDefault(); setSaving(true); setError("");
-    try {
-      await apiRequest("/api/payments", { method: "POST", body: JSON.stringify({
-        applicationId, amount: Number(amount), method, reference, proofPhoto,
-      }) });
-      setAmount(""); setReference(""); setProofPhoto("");
-      await payments.refresh();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to submit payment proof."); }
-    finally { setSaving(false); }
-  }
+  const bookingWindow = useApiResource<BookingWindow>("/api/booking-window");
   return (
     <div className="grid">
       <Card>
-        <h2 className="section-title" style={{ marginTop: 0 }}>Submit payment proof</h2>
-        <p className="muted" style={{ marginBottom: 12 }}>Make your payment through Airtel Money, TNM Mpamba, or bank, then submit its reference for office verification. This portal does not initiate payments.</p>
-        <form onSubmit={(event) => void submitPayment(event)} style={{ display: "grid", gap: 10 }}>
-          <select className="input" aria-label="Allocated booking" value={applicationId} onChange={(event) => setApplicationId(event.target.value)} required>
-            <option value="">Select approved booking</option>{bookings.data?.filter(({ application }) => application.status === "approved").map(({ application }) => <option key={application.id} value={application.id}>{application.semester}</option>)}
-          </select>
-          <Input type="number" min="1" step="1" placeholder="Amount (MWK)" value={amount} onChange={(event) => setAmount(event.target.value)} required />
-          <select className="input" aria-label="Payment method" value={method} onChange={(event) => setMethod(event.target.value)}>{["Airtel Money", "TNM Mpamba", "Bank"].map((item) => <option key={item}>{item}</option>)}</select>
-          <Input placeholder="Payment reference" value={reference} onChange={(event) => setReference(event.target.value)} maxLength={150} required />
-          <Input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Proof of payment image" required onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; if (file.size > 700 * 1024) { setError("Choose an image no larger than 700 KB."); return; } try { setProofPhoto(await readImage(file)); setError(""); } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to read image."); } }} />
-          {error && <p role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
-          <Button type="submit" disabled={saving || !proofPhoto}>{saving ? "Submitting…" : "Submit for verification"}</Button>
-        </form>
+        <h2 className="section-title" style={{ marginTop: 0 }}>Hostel payment status</h2>
+        {bookingWindow.error && <p role="alert" style={{ color: "var(--danger)" }}>{bookingWindow.error}</p>}
+        {bookingWindow.loading && <p className="muted">Loading payment status…</p>}
+        {!bookingWindow.loading && bookingWindow.data?.settings && <>
+          <p><strong>Academic year:</strong> {bookingWindow.data.settings.academicYear}</p>
+          <p style={{ marginTop: 6 }}><strong>Monthly rent:</strong> {mkw(bookingWindow.data.settings.monthlyRent)}</p>
+          <p className="muted" style={{ marginTop: 6 }}>Student bank account: {bookingWindow.data.student.bankAccountNo ?? "Not assigned"}</p>
+          {bookingWindow.data.alreadyBooked ? <>
+            <p style={{ marginTop: 8 }}><strong>{bookingWindow.data.currentMonth} rent status:</strong>{" "}
+              <Badge status={bookingWindow.data.currentMonthPayment ? "success" : "warning"}>{bookingWindow.data.currentMonthPayment ? "paid" : "unpaid"}</Badge>
+            </p>
+            {bookingWindow.data.currentMonthPayment && <p className="muted" style={{ marginTop: 6 }}>Bank reference: {bookingWindow.data.currentMonthPayment.reference} · Recorded {new Date(bookingWindow.data.currentMonthPayment.paidAt).toLocaleString()}</p>}
+          </> : <p className="muted" style={{ marginTop: 8 }}>Book and receive a room assignment before monthly rent payments are due.</p>}
+        </>}
+        {!bookingWindow.loading && !bookingWindow.data?.settings && <p className="muted">The hostel office has not configured a booking year and rent yet.</p>}
       </Card>
-      <h2 className="section-title">Payment submissions</h2>
-      {payments.data?.map(({ payment, semester }) => <Card key={payment.id}><div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><strong>{payment.method} · {mkw(payment.amount)}</strong><Badge status={payment.status === "verified" ? "success" : payment.status === "rejected" ? "danger" : "warning"}>{payment.status}</Badge></div><p className="muted">{semester} · Reference {payment.reference}</p></Card>)}
+      <h2 className="section-title">Monthly rent payment history</h2>
+      {bookingWindow.data?.rentPayments.map((payment) => <Card key={payment.paymentMonth}><div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><strong>{payment.paymentMonth} · {mkw(payment.amount)}</strong><Badge status="success">paid</Badge></div><p className="muted">Bank reference {payment.reference} · {new Date(payment.paidAt).toLocaleString()}</p></Card>)}
+      {bookingWindow.data?.alreadyBooked && !bookingWindow.data.rentPayments.length && <p className="muted">No monthly rent payments recorded yet.</p>}
       <h2 className="section-title">Office receipts</h2>
       {receipts.loading && <p className="muted">Loading receipts…</p>}
       {receipts.error && <p role="alert" style={{ color: "var(--danger)" }}>{receipts.error}</p>}

@@ -18,7 +18,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Email and password are required." }, { status: 400 });
     }
 
-    const [user] = await getDb().select().from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
+    const [user] = await getDb().select({
+      id: users.id, name: users.name, email: users.email, passwordHash: users.passwordHash,
+      role: users.role, regNo: users.regNo, gender: users.gender,
+    }).from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return Response.json({ error: "Invalid email or password." }, { status: 401 });
     }

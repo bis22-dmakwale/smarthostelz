@@ -43,6 +43,41 @@
       "when": 1791840308800,
       "tag": "0005_wooden_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791891790379,
+      "tag": "0006_omniscient_hammerhead",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791892000000,
+      "tag": "0007_missing_bank_account_field",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791899355634,
+      "tag": "0008_little_slipstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791901634517,
+      "tag": "0009_superb_secret_warriors",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791990000000,
+      "tag": "0010_password_reset_tokens",
+      "breakpoints": true
     }
   ]
 }

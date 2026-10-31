@@ -91,11 +91,6 @@ export default function AdminDashboard() {
               <span><strong>Issue credentials</strong><small>Create a student account</small></span>
               <LinkArrow size={16} />
             </Link>
-            <Link href="/admin/inspections" className="quick-access-link">
-              <span className="quick-access-icon"><Activity size={17} /></span>
-              <span><strong>Review inspections</strong><small>See the latest room reports</small></span>
-              <LinkArrow size={16} />
-            </Link>
             <Link href="/admin/issues" className="quick-access-link">
               <span className="quick-access-icon"><Wrench size={17} /></span>
               <span><strong>Manage open issues</strong><small>Maintenance and transfers</small></span>
