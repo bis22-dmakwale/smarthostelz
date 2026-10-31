@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ne, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "@/lib/db";
 import { bookingApplications, bookingSettings, hostelRooms, hostels, roomAssignments, users } from "@/lib/db/schema";
@@ -74,11 +74,11 @@ export async function POST() {
       let selected: (typeof candidates)[number] | undefined;
       for (const candidate of candidates) {
         await tx.execute(sql`SELECT id FROM hostel_rooms WHERE id = ${candidate.roomId} FOR UPDATE`);
-        const [occupied] = await tx.select({ value: count() }).from(roomAssignments).where(and(
-          eq(roomAssignments.active, true), ne(roomAssignments.studentId, user.id), or(
-            eq(roomAssignments.roomId, candidate.roomId),
-            and(isNull(roomAssignments.roomId), eq(roomAssignments.hostel, candidate.hostelName), eq(roomAssignments.room, candidate.roomNo)),
-          ),
+        const [occupied] = await tx.select({ value: count() }).from(bookingApplications).where(and(
+          eq(bookingApplications.roomId, candidate.roomId),
+          eq(bookingApplications.academicYear, settings.academicYear),
+          eq(bookingApplications.status, "approved"),
+          ne(bookingApplications.studentId, user.id),
         ));
         if (occupied.value < candidate.capacity) {
           selected = candidate;
