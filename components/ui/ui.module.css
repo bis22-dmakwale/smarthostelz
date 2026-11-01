@@ -10,16 +10,20 @@
   padding: 11px 17px;
   font-size: .85rem;
   font-weight: 680;
-  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  line-height: 1.2;
+  user-select: none;
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
 .btn:hover:not(:disabled) { transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
 .btn:disabled { cursor: not-allowed; opacity: .62; }
 .btn:focus-visible { outline: 3px solid rgba(22, 143, 202, .3); outline-offset: 2px; }
-.primary { background: var(--primary); color: #fff; box-shadow: 0 4px 10px rgba(17, 126, 175, .2); }
-.primary:hover:not(:disabled) { background: var(--primary-dark); }
-.ghost { background: var(--primary-light); color: var(--primary); }
-.ghost:hover:not(:disabled) { background: #d3edf8; }
-.danger { background: #fceaea; color: var(--danger); }
+.primary { background: var(--primary); color: #fff; box-shadow: 0 5px 12px rgba(17, 126, 175, .2); }
+.primary:hover:not(:disabled) { background: var(--primary-dark); box-shadow: 0 7px 16px rgba(36, 38, 95, .18); }
+.ghost { border-color: #cfe7f3; background: var(--primary-light); color: var(--primary-dark); }
+.ghost:hover:not(:disabled) { border-color: #b8ddec; background: #d3edf8; }
+.danger { border-color: #f2cccc; background: #fceaea; color: var(--danger); }
+.danger:hover:not(:disabled) { background: #f8dddd; }
 
 .card {
   min-width: 0;
@@ -39,11 +43,14 @@
   background: #fff;
   color: var(--text);
   font-size: .87rem;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  line-height: 1.35;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 .input::placeholder { color: #8593a3; }
 .input:hover:not(:focus) { border-color: #aebfcd; }
 .input:focus { border-color: var(--primary); outline: 0; box-shadow: 0 0 0 3px rgba(22, 143, 202, .14); }
+.input:focus-visible { outline: 0; }
+.input:read-only { background: #f8fafc; }
 .input[aria-invalid="true"] { border-color: var(--danger); }
 .input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgba(200, 66, 66, .12); }
 .input:disabled { cursor: not-allowed; background: #f2f5f7; color: #8593a3; }

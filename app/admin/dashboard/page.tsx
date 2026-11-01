@@ -31,7 +31,6 @@ export default function AdminDashboard() {
         </Link>
       </div>
       {error && <p role="alert" className="dashboard-error">{error}</p>}
-      <GateQrCard />
       <div className="grid dashboard-stats">
         {cards.map((stat) => {
           const Icon = stat.icon;
@@ -99,6 +98,7 @@ export default function AdminDashboard() {
           </div>
         </Card>
       </div>
+      <GateQrCard />
     </div>
   );
 }
