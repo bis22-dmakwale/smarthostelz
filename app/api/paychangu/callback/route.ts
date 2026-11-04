@@ -4,19 +4,18 @@ import { appUrl } from "@/lib/email";
 
 /**
  * PayChangu `callback_url`.
- *  - GET : the customer's browser is redirected here after paying → verify, then send them to the Payments tab.
+ *  - GET : the customer's browser is redirected here after paying → verify, then send them to the student dashboard.
  *  - POST: server-to-server webhook (works once the app has a public URL) → verify and settle.
  * Neither trusts what the request says: the payment is always re-verified with PayChangu's API.
  */
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const txRef = params.get("tx_ref") ?? params.get("txRef") ?? "";
-  const target = new URL(`${appUrl()}/student/payments`);
+  const target = new URL(`${appUrl()}/student/dashboard`);
   if (txRef) {
-    target.searchParams.set("tx_ref", txRef);
     try {
       const result = await settlePaychanguPayment(txRef);
-      target.searchParams.set("result", result.status);
+      console.info("PayChangu callback settled payment:", txRef, result.status);
     } catch (error) {
       console.error("PayChangu callback verification failed:", error);
     }

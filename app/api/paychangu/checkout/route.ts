@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const { checkoutUrl } = await createCheckout({
       amount: settings.monthlyRent, email: user.email, firstName: firstName || "Student", lastName: rest.join(" ") || "Student", txRef,
       callbackUrl: `${base}/api/paychangu/callback`,
-      returnUrl: `${base}/student/payments?tx_ref=${encodeURIComponent(txRef)}`,
+      returnUrl: `${base}/student/dashboard`,
       title: "MUBAS hostel rent",
       description: `Hostel rent ${month} (${settings.academicYear})`,
       meta: { studentId: user.id, month, academicYear: settings.academicYear },
