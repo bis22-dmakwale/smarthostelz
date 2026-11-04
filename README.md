@@ -55,3 +55,4 @@ Use an account number listed in **Admin → Credentials**, the configured monthl
 - `GET` and `POST /api/admin/credentials` for office-issued student accounts
 
 Authenticated endpoints enforce the user role on the server. The database must be reachable and migrated before authenticated portal data can load.
+This is test data

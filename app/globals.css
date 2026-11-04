@@ -195,7 +195,7 @@ input[type="file"]::file-selector-button:hover { background: #d3edf8; }
 .sidebar-signout:hover { border-color: rgba(255, 255, 255, .34); background: rgba(255, 255, 255, .16); }
 .header-tools { display: flex; align-items: center; gap: 10px; }
 .header-signout {
-  display: inline-flex;
+  display: none;
   min-width: 42px;
   min-height: 42px;
   align-items: center;
@@ -257,6 +257,7 @@ input[type="file"]::file-selector-button:hover { background: #d3edf8; }
   z-index: 50;
   display: flex;
   height: var(--nav-h);
+  padding-bottom: env(safe-area-inset-bottom);
   overflow-x: auto;
   border-top: 1px solid var(--border);
   background: rgba(255, 255, 255, .96);
@@ -486,6 +487,36 @@ input[type="file"]::file-selector-button:hover { background: #d3edf8; }
   .home-hero { padding: 40px; }
 }
 @media (max-width: 767px) {
+  :root { --pad: 18px; --nav-h: 72px; }
+  body { overflow-x: hidden; }
+  .topbar {
+    min-height: 64px;
+    padding: 10px var(--pad);
+  }
+  .topbar-caption { display: none; }
+  .topbar-title { font-size: .94rem; }
+  .header-tools { gap: 8px; }
+  .profile { gap: 7px; }
+  .profile-name, .profile-caption { display: none; }
+  .profile .avatar { width: 36px; height: 36px; }
+  .profile svg { display: none; }
+  .page {
+    padding: 22px var(--pad) calc(var(--nav-h) + 22px);
+  }
+  .grid { gap: 14px; }
+  .page-intro { gap: 14px; }
+  .page-eyebrow { margin-bottom: 6px; }
+  .page-heading { font-size: 1.45rem; }
+  .page-description { font-size: .84rem; }
+  .card { padding: 16px; border-radius: 14px; }
+  .section-title { margin-top: 16px; }
+  .dashboard-stats { gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-card { min-height: 132px; padding: 14px; }
+  .stat-value { margin-top: 14px; font-size: 1.5rem; }
+  .stat-label { font-size: .74rem; }
+  .stat-note { margin-top: 5px; font-size: .65rem; }
+  .dashboard-columns { gap: 14px; }
+  .dashboard-primary-action { width: 100%; }
   body:has(.login-page) { background: #e8f6fc; }
   .login-page {
     width: min(100% - 28px, 520px);
@@ -520,11 +551,6 @@ input[type="file"]::file-selector-button:hover { background: #d3edf8; }
 }
 @media (max-width: 420px) {
   :root { --pad: 16px; }
-  .topbar { min-height: 68px; }
-  .header-signout { width: 40px; min-width: 40px; padding: 0; }
-  .header-signout span { display: none; }
-  .header-tools { gap: 7px; }
-  .profile-caption { display: none; }
   .page-intro { align-items: flex-start; }
   .home-features { grid-template-columns: 1fr; }
   .student-room-card { align-items: flex-start; flex-direction: column; padding: 22px; }
