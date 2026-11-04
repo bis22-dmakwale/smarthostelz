@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { bookingApplications, bookingSettings, hostelBookingPayments, paychanguPayments, roomAssignments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/server-auth";
-import { appUrl } from "@/lib/email";
 import { PaychanguError, createCheckout, isPaychanguConfigured } from "@/lib/paychangu";
 
 const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1;
+const publicAppUrl = "https://smarthostelz.vercel.app";
 
 /** Starts a PayChangu hosted checkout for one month of the signed-in student's hostel rent. */
 export async function POST(request: Request) {
@@ -39,21 +39,12 @@ export async function POST(request: Request) {
     )).limit(1);
     if (paid) return Response.json({ error: `Rent for ${month} is already paid.` }, { status: 409 });
 
-    // Re-use a checkout opened in the last 30 minutes instead of stacking up abandoned ones.
-    const [open] = await db.select().from(paychanguPayments).where(and(
-      eq(paychanguPayments.studentId, user.id), eq(paychanguPayments.academicYear, settings.academicYear),
-      eq(paychanguPayments.paymentMonth, month), eq(paychanguPayments.status, "pending"),
-      eq(paychanguPayments.amount, settings.monthlyRent), gt(paychanguPayments.createdAt, new Date(Date.now() - 30 * 60_000)),
-    )).orderBy(desc(paychanguPayments.createdAt)).limit(1);
-    if (open?.checkoutUrl) return Response.json({ checkoutUrl: open.checkoutUrl, txRef: open.txRef, reused: true });
-
     const txRef = `MUB-RENT-${randomBytes(6).toString("hex").toUpperCase()}`;
     const [firstName, ...rest] = user.name.trim().split(/\s+/);
-    const base = appUrl();
     const { checkoutUrl } = await createCheckout({
       amount: settings.monthlyRent, email: user.email, firstName: firstName || "Student", lastName: rest.join(" ") || "Student", txRef,
-      callbackUrl: `${base}/api/paychangu/callback`,
-      returnUrl: `${base}/student/dashboard`,
+      callbackUrl: `${publicAppUrl}/api/paychangu/callback`,
+      returnUrl: `${publicAppUrl}/student/dashboard`,
       title: "MUBAS hostel rent",
       description: `Hostel rent ${month} (${settings.academicYear})`,
       meta: { studentId: user.id, month, academicYear: settings.academicYear },
