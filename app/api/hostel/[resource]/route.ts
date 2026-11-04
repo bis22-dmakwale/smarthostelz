@@ -18,6 +18,7 @@ import {
   users,
 } from "@/lib/db/schema";
 import { requireUser } from "@/lib/server-auth";
+import { sendRepairReportedAdmin, sendRepairUpdate, sendTransferDecision, sendTransferRequestedAdmin } from "@/lib/email";
 
 type RouteContext = { params: Promise<{ resource: string }> };
 type Body = Record<string, unknown>;
@@ -269,6 +270,7 @@ export async function POST(request: Request, { params }: RouteContext) {
         await tx.insert(maintenanceVotes).values({ requestId: item.id, studentId: user.id });
         return item;
       });
+      await sendRepairReportedAdmin({ studentName: user.name, title: created.title, hostel: created.hostel, room: created.room });
       return Response.json(created, { status: 201 });
     }
     if (resource === "inspections") {
@@ -330,6 +332,10 @@ export async function POST(request: Request, { params }: RouteContext) {
         requestedRoom: target.room,
         reason: body.reason.trim(),
       }).returning();
+      await sendTransferRequestedAdmin({
+        studentName: user.name, from: `${created.currentHostel} · ${created.currentRoom}`,
+        to: `${created.requestedHostel} · ${created.requestedRoom}`, reason: created.reason,
+      });
       return Response.json(created, { status: 201 });
     }
     if (resource === "lost-found") {
@@ -415,6 +421,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
           title: "Repair request updated",
           message: `${updated.title} is now ${updated.status}${updated.assignedStaff ? ` and assigned to ${updated.assignedStaff}` : ""}${updated.resolutionNotes ? `. ${updated.resolutionNotes}` : ""}`,
         });
+        const [owner] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, updated.studentId)).limit(1);
+        if (owner) await sendRepairUpdate({
+          to: owner.email, name: owner.name, title: updated.title, status: updated.status,
+          staff: updated.assignedStaff, notes: updated.resolutionNotes,
+        });
       }
       return Response.json(updated);
     }
@@ -463,6 +474,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
             room: target.room,
           });
         }
+      });
+      const [requester] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, transfer.studentId)).limit(1);
+      if (requester) await sendTransferDecision({
+        to: requester.email, name: requester.name, status: body.status as "approved" | "rejected",
+        fromRoom: `${transfer.currentHostel} · ${transfer.currentRoom}`,
+        toRoom: `${transfer.requestedHostel} · ${transfer.requestedRoom}`,
+        notes: typeof body.notes === "string" ? body.notes.trim().slice(0, 500) || null : null,
       });
       return Response.json({ ok: true });
     }

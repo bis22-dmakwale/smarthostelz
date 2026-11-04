@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   BedDouble,
+  CreditCard,
   Building2,
   ScanLine,
   House,
@@ -20,6 +21,7 @@ export const navIcons = {
   students: UsersRound,
   issues: Wrench,
   receipts: ReceiptText,
+  payments: CreditCard,
   lostFound: PackageSearch,
   home: House,
   checkin: ScanLine,

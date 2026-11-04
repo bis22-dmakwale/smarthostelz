@@ -44,6 +44,26 @@ curl -X POST "$BASE_URL/api/bank-simulator/payments" \
 
 Use an account number listed in **Admin → Credentials**, the configured monthly rent amount, a `YYYY-MM` month, and a unique bank reference. Payment is not required to book or receive an assignment.
 
+## Email (Nodemailer + Gmail SMTP)
+
+Set the `SMTP_*` variables in `.env` (see `.env.example`; for Gmail use an **App Password**, not your normal password). Emails sent:
+
+| Recipient | When |
+|-----------|------|
+| Student | Account created — **login email + temporary password (the only place the password is ever delivered; admins never see it)** |
+| Student | Booking confirmed; payment received; payment failed; password reset link; password changed; repair status updated; room transfer approved/rejected |
+| Admin | New booking; rent payment received (or duplicate payment needing refund); new repair report; new transfer request |
+
+If SMTP is not configured or rejects the message, creating a student account is **rolled back** (so a password is never lost or shown on screen). Admins can use **Admin → Credentials → Email new password** to issue a fresh password by email.
+
+## Online rent payments (PayChangu)
+
+Students pay from the **Payments** tab. Set `PAYCHANGU_SECRET_KEY` (test key for the prototype) and `APP_URL`, then run `npm run db:migrate`.
+
+Flow: `POST /api/paychangu/checkout` → PayChangu hosted checkout → redirect to `/api/paychangu/callback` (and/or webhook `POST` to the same URL) → the server **re-verifies the transaction with PayChangu** (status, amount, currency, reference) → rent for that month is recorded, the student gets a receipt email and admins are notified. Settlement is idempotent, so the webhook, redirect and "Check status" button can all fire safely.
+
+On localhost the browser redirect still completes the payment; to receive real webhooks, expose the app (e.g. `ngrok http 3000`), set `APP_URL` to the public URL and add `<APP_URL>/api/paychangu/callback` as the webhook URL in the PayChangu dashboard.
+
 ## API resources
 
 - `GET /api/health`, `POST /api/auth/login`, `POST /api/auth/logout`
@@ -52,7 +72,8 @@ Use an account number listed in **Admin → Credentials**, the configured monthl
 - `/api/hostel/assignment`, `/api/hostel/checkins`, `/api/hostel/inspections`
 - `/api/hostel/receipts`, `/api/hostel/maintenance`, `/api/hostel/transfers`
 - `/api/hostel/noise`, `/api/hostel/lost-found`, `/api/hostel/students`, `/api/hostel/summary`
-- `GET` and `POST /api/admin/credentials` for office-issued student accounts
+- `GET` and `POST /api/admin/credentials` for office-issued student accounts (passwords are emailed, never returned); `POST /api/admin/credentials/resend`
+- `/api/paychangu/checkout`, `/api/paychangu/verify`, `/api/paychangu/callback`, `/api/paychangu/payments`
 
 Authenticated endpoints enforce the user role on the server. The database must be reachable and migrated before authenticated portal data can load.
 This is test data

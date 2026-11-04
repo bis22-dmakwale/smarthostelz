@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -102,7 +103,7 @@ export default function StudentBookingsPage() {
           <Badge status={windowData.currentMonthPayment ? "success" : "warning"}>{windowData.currentMonthPayment ? "paid" : "unpaid"}</Badge>
         </p>
         {windowData.currentMonthPayment && <p className="muted" style={{ marginTop: 5 }}>Reference {windowData.currentMonthPayment.reference} · {mkw(windowData.currentMonthPayment.amount)} · Recorded {new Date(windowData.currentMonthPayment.paidAt).toLocaleString()}</p>}
-        <Button variant="ghost" onClick={() => void bookingWindow.refresh()} disabled={bookingWindow.loading} style={{ marginTop: 10 }}>Refresh rent status</Button>
+        <Link href="/student/payments"><Button style={{ marginTop: 10 }}>Pay rent online</Button></Link>
         {windowData.rentPayments.length > 0 && <>
           <h3 className="section-title" style={{ marginTop: 18 }}>Monthly payment history</h3>
           {windowData.rentPayments.map((payment) => <p className="muted" key={payment.paymentMonth} style={{ marginTop: 5 }}>{payment.paymentMonth} · {mkw(payment.amount)} · {payment.reference}</p>)}

@@ -2,7 +2,7 @@ import { and, count, desc, eq, ne, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "@/lib/db";
 import { bookingApplications, bookingSettings, hostelRooms, hostels, roomAssignments, users } from "@/lib/db/schema";
-import { sendBookingConfirmation } from "@/lib/booking-email";
+import { sendBookingAdminNotice, sendBookingConfirmation } from "@/lib/email";
 import { requireUser } from "@/lib/server-auth";
 
 export async function GET() {
@@ -120,6 +120,10 @@ export async function POST() {
     } catch (error) {
       console.error("Booking confirmation email failed:", error);
     }
+    await sendBookingAdminNotice({
+      studentName: user.name, regNo: user.regNo, academicYear: booking.application.academicYear!,
+      hostel: booking.hostel, room: booking.room, confirmationNo: booking.application.confirmationNo!,
+    });
     return Response.json({ ...booking.application, hostelName: booking.hostel, roomNo: booking.room, emailSent }, { status: 201 });
   } catch (error) {
     if (error instanceof Response) return Response.json({ error: await error.text() }, { status: error.status });

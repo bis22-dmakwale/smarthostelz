@@ -9,11 +9,13 @@ import { useApiResource } from "@/components/hostel/useApiResource";
 import { mkw } from "@/lib/format";
 
 type Payment = { payment: { id: string; amount: number; method: string; reference: string; status: string; proofPhoto: string | null }; studentName: string; regNo: string | null; receiptId: string | null };
+type Online = { id: string; studentName: string; regNo: string | null; paymentMonth: string; amount: number; txRef: string; status: string; channel: string | null; createdAt: string; paidAt: string | null };
 type Receipt = { receipt: { id: string; trackingNo: string; amount: number; method: string; paidAt: string; status: string }; studentName: string; regNo: string | null };
 
 export default function AdminReceiptsPage() {
   const payments = useApiResource<Payment[]>("/api/payments");
   const receipts = useApiResource<Receipt[]>("/api/hostel/receipts");
+  const online = useApiResource<{ payments: Online[] }>("/api/paychangu/payments");
   const [paymentId, setPaymentId] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -49,6 +51,17 @@ export default function AdminReceiptsPage() {
           <Button type="submit" disabled={saving || !paymentId}>{saving ? "Generating…" : "Generate receipt"}</Button>
         </form>
       </Card>
+      <h2 className="section-title">Online rent payments (PayChangu)</h2>
+      <p className="muted">Confirmed automatically with PayChangu; students and admins are emailed on success.</p>
+      {online.error && <p role="alert" style={{ color: "var(--danger)" }}>{online.error}</p>}
+      {online.data?.payments.map((row) => (
+        <Card key={row.id}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><strong>{row.studentName} · {row.regNo}</strong><Badge status={row.status === "success" ? "success" : row.status === "failed" ? "danger" : "warning"}>{row.status === "success" ? "paid" : row.status}</Badge></div>
+          <p className="muted">{row.paymentMonth} · {mkw(row.amount)}{row.channel ? ` · ${row.channel.replace(/_/g, " ")}` : ""} · {new Date(row.paidAt ?? row.createdAt).toLocaleString()}</p>
+          <p style={{ fontFamily: "monospace", marginTop: 4 }}>{row.txRef}</p>
+        </Card>
+      ))}
+      {!online.loading && !online.data?.payments.length && <p className="muted">No online payments yet.</p>}
       <h2 className="section-title">Payment verification</h2>
       {payments.error && <p role="alert" style={{ color: "var(--danger)" }}>{payments.error}</p>}
       {payments.data?.map((row) => (

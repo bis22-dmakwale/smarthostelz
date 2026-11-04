@@ -7,7 +7,7 @@ import Badge from "@/components/ui/Badge";
 import { useApiResource } from "@/components/hostel/useApiResource";
 import { apiRequest } from "@/lib/api";
 
-type Credential = { name: string; email: string; regNo: string; gender: string; bankAccountNo: string; password: string };
+type Credential = { name: string; email: string; regNo: string; gender: string; bankAccountNo: string; credentialsEmailed: boolean };
 type StudentProfile = { id: string; name: string; regNo: string | null; gender: string | null; bankAccountNo: string | null };
 
 export default function CredentialsPage() {
@@ -20,6 +20,8 @@ export default function CredentialsPage() {
   const [eligibility, setEligibility] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [resending, setResending] = useState("");
 
   async function issue(event: React.FormEvent) {
     event.preventDefault(); setSaving(true); setError(""); setCredential(null);
@@ -31,6 +33,15 @@ export default function CredentialsPage() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to issue credentials.");
     } finally { setSaving(false); }
+  }
+
+  async function resend(student: StudentProfile) {
+    setError(""); setNotice(""); setResending(student.id);
+    try {
+      const result = await apiRequest<{ email: string }>("/api/admin/credentials/resend", { method: "POST", body: JSON.stringify({ id: student.id }) });
+      setNotice(`A new temporary password was emailed to ${result.email}.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to email new credentials."); }
+    finally { setResending(""); }
   }
 
   async function saveEligibility(student: StudentProfile) {
@@ -46,7 +57,7 @@ export default function CredentialsPage() {
     <div className="grid">
       <Card>
         <h2 className="section-title" style={{ marginTop: 0 }}>Issue student login</h2>
-        <p className="muted" style={{ marginBottom: 10 }}>A temporary password is generated and displayed once. Share it securely with the student.</p>
+        <p className="muted" style={{ marginBottom: 10 }}>A temporary password is generated and emailed straight to the student. It is never shown to hostel staff.</p>
         <form onSubmit={(event) => void issue(event)} style={{ display: "grid", gap: 10 }}>
           <Input placeholder="Student full name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={200} />
           <Input type="email" placeholder="University email" value={email} onChange={(event) => setEmail(event.target.value)} required />
@@ -55,7 +66,7 @@ export default function CredentialsPage() {
             <option value="male">Male hostel eligibility</option><option value="female">Female hostel eligibility</option>
           </select>
           {error && <p role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
-          <Button type="submit" disabled={saving}>{saving ? "Issuing…" : "Generate and issue credentials"}</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Creating and emailing…" : "Create account and email login"}</Button>
         </form>
       </Card>
       {credential && (
@@ -64,15 +75,18 @@ export default function CredentialsPage() {
           <p className="muted">{credential.regNo} · {credential.email}</p>
           <p className="muted">Verified eligibility: {credential.gender}</p>
           <p style={{ fontFamily: "monospace", marginTop: 8 }}>Bank account number: <strong>{credential.bankAccountNo}</strong></p>
-          <p style={{ fontFamily: "monospace", marginTop: 8 }}>Temporary password: <strong>{credential.password}</strong></p>
+          <p role="status" style={{ marginTop: 8 }}>Login details were emailed to <strong>{credential.email}</strong>. The password is not shown here.</p>
         </Card>
       )}
       <Card>
         <h2 className="section-title" style={{ marginTop: 0 }}>Student bank account numbers</h2>
         <p className="muted" style={{ marginBottom: 10 }}>Use the assigned account number to record simulated bank payments. Verify missing hostel eligibility before booking.</p>
+        {notice && <p role="status" style={{ color: "var(--success, var(--primary))", marginBottom: 8 }}>{notice}</p>}
+        {error && <p role="alert" style={{ color: "var(--danger)", marginBottom: 8 }}>{error}</p>}
         {students.data?.map((student) => (
           <div key={student.id} className="activity-row" style={{ alignItems: "center", gap: 10 }}>
             <div style={{ flex: 1 }}><strong>{student.name}</strong><p className="muted">{student.regNo ?? "No registration number"} · Account {student.bankAccountNo ?? "not assigned"}</p></div>
+            <Button variant="ghost" disabled={resending === student.id} onClick={() => void resend(student)}>{resending === student.id ? "Sending…" : "Email new password"}</Button>
             {!student.gender && <>
               <select className="input" aria-label={`Verified hostel eligibility for ${student.name}`} value={eligibility[student.id] ?? ""} onChange={(event) => setEligibility((values) => ({ ...values, [student.id]: event.target.value }))} style={{ maxWidth: 180 }}>
                 <option value="">Select eligibility</option><option value="male">Male</option><option value="female">Female</option>

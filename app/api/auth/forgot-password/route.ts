@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { passwordResetTokens, users } from "@/lib/db/schema";
-import { sendPasswordResetEmail } from "@/lib/password-reset-email";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 const TOKEN_MINUTES = 30;
 const GENERIC = { ok: true, message: "If an account exists for that email, a reset link has been sent." };

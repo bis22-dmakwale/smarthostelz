@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { hashPassword, passwordPolicyError, verifyPassword } from "@/lib/password";
 import { requireUser } from "@/lib/server-auth";
+import { sendPasswordChangedEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Your current password is incorrect." }, { status: 400 });
     }
     await db.update(users).set({ passwordHash: hashPassword(newPassword) }).where(eq(users.id, current.id));
+    await sendPasswordChangedEmail(current.email, current.name);
     return Response.json({ ok: true });
   } catch (error) {
     if (error instanceof Response) return error;

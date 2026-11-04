@@ -5,6 +5,7 @@ import { users } from "@/lib/db/schema";
 import { generateBankAccountNumber } from "@/lib/bank-account";
 import { hashPassword } from "@/lib/password";
 import { requireUser } from "@/lib/server-auth";
+import { sendStudentCredentials } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
       typeof value === "string" && value.trim().length > 0)) {
       return Response.json({ error: "Name, email, and registration number are required." }, { status: 400 });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((input.email as string).trim())) return Response.json({ error: "Enter a valid student email address." }, { status: 400 });
     if (!["male", "female"].includes(String(input.gender))) return Response.json({ error: "Choose the student's verified hostel eligibility." }, { status: 400 });
 
     const password = `MUB-${randomBytes(6).toString("base64url")}`;
@@ -31,6 +33,9 @@ export async function POST(request: Request) {
       regNo: (input.regNo as string).trim(),
       gender: input.gender as "male" | "female",
     };
+    // The temporary password exists only in server memory: it is emailed to the student and
+    // never returned to (or shown to) the admin. If the email cannot be sent, the account is
+    // rolled back so no student is ever created that nobody can sign in as.
     const student = await db.transaction(async (tx) => {
       const [created] = await tx.insert(users).values({
         name: values.name,
@@ -44,12 +49,19 @@ export async function POST(request: Request) {
         id: users.id, name: users.name, email: users.email, regNo: users.regNo,
         gender: users.gender, bankAccountNo: users.bankAccountNo,
       });
+      await sendStudentCredentials({
+        to: created.email, name: created.name, regNo: created.regNo ?? values.regNo,
+        bankAccountNo: created.bankAccountNo ?? "", password,
+      });
       return created;
     });
-    return Response.json({ ...student, password }, { status: 201 });
+    return Response.json({ ...student, credentialsEmailed: true }, { status: 201 });
   } catch (error) {
     if (error instanceof Response) return error;
     console.error("Credential issue failed:", error);
+    if (error instanceof Error && /SMTP|smtp|EAUTH|ECONNECTION|ETIMEDOUT|Invalid login|Greeting never received|ESOCKET/.test(`${error.message} ${(error as { code?: string }).code ?? ""}`)) {
+      return Response.json({ error: "The login email could not be sent, so the account was not created. Check the SMTP settings and try again." }, { status: 502 });
+    }
     const code = error && typeof error === "object" && "code" in error ? error.code : null;
     if (code === "23505") return Response.json({ error: "That email or registration number is already in use." }, { status: 409 });
     return Response.json({ error: "Unable to issue student credentials." }, { status: 500 });

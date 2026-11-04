@@ -18,7 +18,7 @@ export const transferStatus = pgEnum("transfer_status", ["pending", "approved", 
 export const complaintStatus = pgEnum("complaint_status", ["open", "reviewed", "resolved"]);
 export const foundStatus = pgEnum("found_status", ["open", "claimed", "returned"]);
 export const foundItemType = pgEnum("found_item_type", ["lost", "found"]);
-export const paymentMethod = pgEnum("payment_method", ["Airtel Money", "TNM Mpamba", "Bank", "Cash"]);
+export const paymentMethod = pgEnum("payment_method", ["Airtel Money", "TNM Mpamba", "Bank", "Cash", "PayChangu"]);
 
 export const bookingSettings = pgTable("booking_settings", {
   id: text("id").primaryKey().default("current"),
@@ -91,6 +91,26 @@ export const hostelBookingPayments = pgTable("hostel_booking_payments", {
   paidAt: timestamp("paid_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("hostel_booking_payments_student_month_idx").on(table.studentId, table.academicYear, table.paymentMonth),
+]);
+
+/** Online rent checkouts started by students through PayChangu. A success row is mirrored into hostel_booking_payments. */
+export const paychanguPayments = pgTable("paychangu_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  studentId: uuid("student_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  academicYear: text("academic_year").notNull(),
+  paymentMonth: text("payment_month").notNull(),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("MWK"),
+  txRef: text("tx_ref").notNull().unique(),
+  status: text("status").notNull().default("pending"), // pending | success | failed
+  checkoutUrl: text("checkout_url"),
+  providerReference: text("provider_reference"),
+  channel: text("channel"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+}, (table) => [
+  uniqueIndex("paychangu_payments_one_success_idx").on(table.studentId, table.academicYear, table.paymentMonth)
+    .where(sql`${table.status} = 'success'`),
 ]);
 
 export const users = pgTable("users", {

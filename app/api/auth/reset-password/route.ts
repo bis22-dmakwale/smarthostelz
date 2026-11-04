@@ -3,6 +3,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { passwordResetTokens, users } from "@/lib/db/schema";
 import { hashPassword, passwordPolicyError } from "@/lib/password";
+import { sendPasswordChangedEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
       .returning({ userId: passwordResetTokens.userId });
     if (!claimed) return Response.json({ error: "This reset link is invalid or has expired. Request a new one." }, { status: 400 });
     await db.update(users).set({ passwordHash: hashPassword(newPassword) }).where(eq(users.id, claimed.userId));
+    const [owner] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, claimed.userId)).limit(1);
+    if (owner) await sendPasswordChangedEmail(owner.email, owner.name);
     return Response.json({ ok: true });
   } catch (error) {
     console.error("Password reset failed:", error);
