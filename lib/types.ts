@@ -7,5 +7,6 @@ export interface User {
   role: Role;
   regNo?: string | null;
   gender?: string | null;
+  programmeYears?: number | null;
   bankAccountNo?: string | null;
 }

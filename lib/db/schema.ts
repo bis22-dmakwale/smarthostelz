@@ -121,6 +121,8 @@ export const users = pgTable("users", {
   role: userRole("role").notNull().default("student"),
   regNo: text("reg_no").unique(),
   gender: text("gender"),
+  /** Length of the student's programme (4 or 5). Drives the once-per-programme booking lock. */
+  programmeYears: integer("programme_years"),
   bankAccountNo: text("bank_account_no").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

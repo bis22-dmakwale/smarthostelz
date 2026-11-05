@@ -1,7 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { bookingApplications, bookingSettings, hostelBookingPayments } from "@/lib/db/schema";
+import { bookingApplications, bookingSettings, hostelBookingPayments, users } from "@/lib/db/schema";
 import { requireUser } from "@/lib/server-auth";
+import { evaluateBookingLock, isProgrammeYears } from "@/lib/booking-lock";
 
 export async function GET() {
   try {
@@ -14,6 +15,14 @@ export async function GET() {
       eq(bookingApplications.academicYear, settings.academicYear),
       eq(bookingApplications.status, "approved"),
     )).limit(1) : [];
+    const [profile] = await db.select({ programmeYears: users.programmeYears }).from(users).where(eq(users.id, user.id)).limit(1);
+    const programmeYears = isProgrammeYears(profile?.programmeYears) ? profile.programmeYears : null;
+    const [firstBooking] = await db.select({ academicYear: bookingApplications.academicYear }).from(bookingApplications).where(and(
+      eq(bookingApplications.studentId, user.id), eq(bookingApplications.status, "approved"),
+    )).orderBy(asc(bookingApplications.academicYear)).limit(1);
+    const bookingLock = settings && programmeYears
+      ? evaluateBookingLock(firstBooking?.academicYear ?? null, programmeYears, settings.academicYear)
+      : { locked: false as const };
     const rentPayments = settings && user.bankAccountNo ? await db.select({
       paymentMonth: hostelBookingPayments.paymentMonth,
       amount: hostelBookingPayments.amount,
@@ -30,7 +39,8 @@ export async function GET() {
     return Response.json({
       settings: settings ?? null,
       isOpen: Boolean(settings && now >= settings.opensAt && now <= settings.closesAt),
-      student: { bankAccountNo: user.bankAccountNo ?? null, regNo: user.regNo ?? null, gender: user.gender ?? null },
+      student: { bankAccountNo: user.bankAccountNo ?? null, regNo: user.regNo ?? null, gender: user.gender ?? null, programmeYears },
+      bookingLock,
       alreadyBooked: Boolean(yearBooking),
       currentMonth,
       currentMonthPayment: currentMonthPayment ?? null,

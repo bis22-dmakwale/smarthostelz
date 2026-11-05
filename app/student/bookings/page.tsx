@@ -17,7 +17,8 @@ type BookingWindow = {
   settings: { academicYear: string; opensAt: string; closesAt: string; monthlyRent: number } | null;
   isOpen: boolean;
   alreadyBooked: boolean;
-  student: { bankAccountNo: string | null; regNo: string | null; gender: string | null };
+  student: { bankAccountNo: string | null; regNo: string | null; gender: string | null; programmeYears: number | null };
+  bookingLock: { locked: false } | { locked: true; firstAcademicYear: string; lastLockedAcademicYear: string; nextEligibleAcademicYear: string };
   currentMonth: string;
   currentMonthPayment: { amount: number; reference: string; paidAt: string } | null;
   rentPayments: { paymentMonth: string; amount: number; reference: string; paidAt: string }[];
@@ -49,8 +50,9 @@ export default function StudentBookingsPage() {
   }
 
   const windowData = bookingWindow.data;
-  const eligible = Boolean(windowData?.student.regNo && ["male", "female"].includes(windowData.student.gender ?? ""));
-  const canBook = Boolean(windowData?.isOpen && !windowData.alreadyBooked && eligible);
+  const eligible = Boolean(windowData?.student.regNo && ["male", "female"].includes(windowData.student.gender ?? "") && windowData.student.programmeYears);
+  const locked = Boolean(windowData?.bookingLock.locked);
+  const canBook = Boolean(windowData?.isOpen && !windowData.alreadyBooked && eligible && !locked);
 
   return (
     <div className="grid">
@@ -71,6 +73,7 @@ export default function StudentBookingsPage() {
           </p>
           <p style={{ marginTop: 10 }}><strong>Your bank account number:</strong> <span style={{ fontFamily: "monospace" }}>{windowData.student.bankAccountNo ?? "Not assigned — contact the hostel office"}</span></p>
           {!eligible && <p role="alert" style={{ color: "var(--danger)", marginTop: 8 }}>Your student eligibility details are incomplete. Contact the hostel office.</p>}
+          {windowData.bookingLock.locked && !windowData.alreadyBooked && <p role="status" className="muted" style={{ marginTop: 8 }}>You were allocated a room in {windowData.bookingLock.firstAcademicYear}. Allocation is once per {windowData.student.programmeYears}-year programme, so you can book again from {windowData.bookingLock.nextEligibleAcademicYear}.</p>}
           {windowData.alreadyBooked && <p className="muted" style={{ marginTop: 8 }}>You already have an approved booking for this academic year.</p>}
           <Button onClick={() => void book()} disabled={saving || bookingWindow.loading || !canBook} style={{ marginTop: 12 }}>
             {saving ? "Checking availability…" : "Book hostel"}

@@ -44,6 +44,10 @@ curl -X POST "$BASE_URL/api/bank-simulator/payments" \
 
 Use an account number listed in **Admin → Credentials**, the configured monthly rent amount, a `YYYY-MM` month, and a unique bank reference. Payment is not required to book or receive an assignment.
 
+## Once-per-programme booking lock
+
+Each student account has a `programme_years` value (4 or 5), set by the hostel office under **Admin → Credentials**. After a student's first approved booking, they cannot book again until `programme_years` academic years have passed (e.g. first booking 2026/2027 on a 4-year programme: locked through 2029/2030, eligible again from 2030/2031). Students without a programme length cannot book until the office sets it. The rule lives in `lib/booking-lock.ts` and is enforced inside the booking transaction in `app/api/bookings/route.ts`. Apply the new migration with `npm run db:migrate` (`drizzle/0012_programme_years.sql`).
+
 ## Email (Nodemailer + Gmail SMTP)
 
 Set the `SMTP_*` variables in `.env` (see `.env.example`; for Gmail use an **App Password**, not your normal password). Emails sent:

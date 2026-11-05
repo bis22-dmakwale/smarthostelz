@@ -19,12 +19,14 @@ async function seedUser(input: {
   role: "admin" | "student";
   regNo?: string;
   gender?: "male" | "female";
+  programmeYears?: 4 | 5;
 }) {
   const email = input.email.trim().toLowerCase();
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (existing) {
-    if ((input.gender && !existing.gender) || (input.role === "student" && !existing.bankAccountNo)) {
+    if ((input.gender && !existing.gender) || (input.programmeYears && !existing.programmeYears) || (input.role === "student" && !existing.bankAccountNo)) {
       await db.update(users).set({
+        ...(input.programmeYears && !existing.programmeYears ? { programmeYears: input.programmeYears } : {}),
         ...(input.gender && !existing.gender ? { gender: input.gender } : {}),
         ...(input.role === "student" && !existing.bankAccountNo
           ? { bankAccountNo: generateBankAccountNumber() }
@@ -40,6 +42,7 @@ async function seedUser(input: {
     role: input.role,
     regNo: input.regNo,
     gender: input.gender,
+    programmeYears: input.programmeYears,
     bankAccountNo: input.role === "student" ? generateBankAccountNumber() : undefined,
   }).returning();
   return created;
@@ -65,6 +68,7 @@ async function main() {
       role: "student",
       regNo: process.env.SEED_STUDENT_REG_NO ?? "BIS/22/EP/015",
       gender: process.env.SEED_STUDENT_GENDER === "female" ? "female" : "male",
+      programmeYears: process.env.SEED_STUDENT_PROGRAMME_YEARS === "5" ? 5 : 4,
     });
   }
 

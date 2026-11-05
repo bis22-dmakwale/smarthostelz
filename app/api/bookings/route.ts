@@ -1,9 +1,10 @@
-import { and, count, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ne, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { getDb } from "@/lib/db";
 import { bookingApplications, bookingSettings, hostelRooms, hostels, roomAssignments, users } from "@/lib/db/schema";
 import { sendBookingAdminNotice, sendBookingConfirmation } from "@/lib/email";
 import { requireUser } from "@/lib/server-auth";
+import { bookingLockMessage, evaluateBookingLock, isProgrammeYears } from "@/lib/booking-lock";
 
 export async function GET() {
   try {
@@ -62,6 +63,18 @@ export async function POST() {
         eq(bookingApplications.status, "approved"),
       )).limit(1);
       if (existing) throw new Response(`You already have a hostel booking for academic year ${settings.academicYear}.`, { status: 409 });
+
+      // Once-per-programme lock: a student allocated a room once cannot book again for the
+      // length of their programme (4 or 5 years). The lock runs from their first approved booking.
+      const [profile] = await tx.select({ programmeYears: users.programmeYears }).from(users).where(eq(users.id, user.id)).limit(1);
+      if (!isProgrammeYears(profile?.programmeYears)) {
+        throw new Response("Your programme length (4 or 5 years) is missing. Contact the hostel office.", { status: 409 });
+      }
+      const [firstBooking] = await tx.select({ academicYear: bookingApplications.academicYear }).from(bookingApplications).where(and(
+        eq(bookingApplications.studentId, user.id), eq(bookingApplications.status, "approved"),
+      )).orderBy(asc(bookingApplications.academicYear)).limit(1);
+      const lock = evaluateBookingLock(firstBooking?.academicYear ?? null, profile.programmeYears, settings.academicYear);
+      if (lock.locked) throw new Response(bookingLockMessage(lock, profile.programmeYears), { status: 409 });
 
       const candidates = await tx.select({
         hostelId: hostels.id, hostelName: hostels.name,

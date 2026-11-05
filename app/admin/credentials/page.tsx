@@ -7,14 +7,16 @@ import Badge from "@/components/ui/Badge";
 import { useApiResource } from "@/components/hostel/useApiResource";
 import { apiRequest } from "@/lib/api";
 
-type Credential = { name: string; email: string; regNo: string; gender: string; bankAccountNo: string; credentialsEmailed: boolean };
-type StudentProfile = { id: string; name: string; regNo: string | null; gender: string | null; bankAccountNo: string | null };
+type Credential = { name: string; email: string; regNo: string; gender: string; programmeYears: number; bankAccountNo: string; credentialsEmailed: boolean };
+type StudentProfile = { id: string; name: string; regNo: string | null; gender: string | null; programmeYears: number | null; bankAccountNo: string | null };
 
 export default function CredentialsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [regNo, setRegNo] = useState("");
   const [gender, setGender] = useState("male");
+  const [programmeYears, setProgrammeYears] = useState("4");
+  const [programmeEdits, setProgrammeEdits] = useState<Record<string, string>>({});
   const [credential, setCredential] = useState<Credential | null>(null);
   const students = useApiResource<StudentProfile[]>("/api/admin/credentials");
   const [eligibility, setEligibility] = useState<Record<string, string>>({});
@@ -27,7 +29,7 @@ export default function CredentialsPage() {
     event.preventDefault(); setSaving(true); setError(""); setCredential(null);
     try {
       setCredential(await apiRequest<Credential>("/api/admin/credentials", {
-        method: "POST", body: JSON.stringify({ name, email, regNo, gender }),
+        method: "POST", body: JSON.stringify({ name, email, regNo, gender, programmeYears: Number(programmeYears) }),
       }));
       setName(""); setEmail(""); setRegNo(""); await students.refresh();
     } catch (cause) {
@@ -53,6 +55,15 @@ export default function CredentialsPage() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update student eligibility."); }
   }
 
+  async function saveProgramme(student: StudentProfile) {
+    const years = programmeEdits[student.id];
+    if (!years) return;
+    try {
+      await apiRequest("/api/admin/credentials", { method: "PATCH", body: JSON.stringify({ id: student.id, programmeYears: Number(years) }) });
+      await students.refresh();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to update the programme length."); }
+  }
+
   return (
     <div className="grid">
       <Card>
@@ -65,6 +76,9 @@ export default function CredentialsPage() {
           <select className="input" aria-label="Verified hostel eligibility" value={gender} onChange={(event) => setGender(event.target.value)}>
             <option value="male">Male hostel eligibility</option><option value="female">Female hostel eligibility</option>
           </select>
+          <select className="input" aria-label="Programme length" value={programmeYears} onChange={(event) => setProgrammeYears(event.target.value)}>
+            <option value="4">4-year programme</option><option value="5">5-year programme</option>
+          </select>
           {error && <p role="alert" style={{ color: "var(--danger)" }}>{error}</p>}
           <Button type="submit" disabled={saving}>{saving ? "Creating and emailing…" : "Create account and email login"}</Button>
         </form>
@@ -73,7 +87,7 @@ export default function CredentialsPage() {
         <Card>
           <div style={{ display: "flex", justifyContent: "space-between" }}><strong>{credential.name}</strong><Badge status="success">Account created</Badge></div>
           <p className="muted">{credential.regNo} · {credential.email}</p>
-          <p className="muted">Verified eligibility: {credential.gender}</p>
+          <p className="muted">Verified eligibility: {credential.gender} · {credential.programmeYears}-year programme</p>
           <p style={{ fontFamily: "monospace", marginTop: 8 }}>Bank account number: <strong>{credential.bankAccountNo}</strong></p>
           <p role="status" style={{ marginTop: 8 }}>Login details were emailed to <strong>{credential.email}</strong>. The password is not shown here.</p>
         </Card>
@@ -85,7 +99,13 @@ export default function CredentialsPage() {
         {error && <p role="alert" style={{ color: "var(--danger)", marginBottom: 8 }}>{error}</p>}
         {students.data?.map((student) => (
           <div key={student.id} className="activity-row" style={{ alignItems: "center", gap: 10 }}>
-            <div style={{ flex: 1 }}><strong>{student.name}</strong><p className="muted">{student.regNo ?? "No registration number"} · Account {student.bankAccountNo ?? "not assigned"}</p></div>
+            <div style={{ flex: 1 }}><strong>{student.name}</strong><p className="muted">{student.regNo ?? "No registration number"} · Account {student.bankAccountNo ?? "not assigned"} · {student.programmeYears ? `${student.programmeYears}-year programme` : "programme length missing"}</p></div>
+            {!student.programmeYears && <>
+              <select className="input" aria-label={`Programme length for ${student.name}`} value={programmeEdits[student.id] ?? ""} onChange={(event) => setProgrammeEdits((values) => ({ ...values, [student.id]: event.target.value }))} style={{ maxWidth: 160 }}>
+                <option value="">Programme length</option><option value="4">4 years</option><option value="5">5 years</option>
+              </select>
+              <Button disabled={!programmeEdits[student.id]} onClick={() => void saveProgramme(student)}>Save</Button>
+            </>}
             <Button variant="ghost" disabled={resending === student.id} onClick={() => void resend(student)}>{resending === student.id ? "Sending…" : "Email new password"}</Button>
             {!student.gender && <>
               <select className="input" aria-label={`Verified hostel eligibility for ${student.name}`} value={eligibility[student.id] ?? ""} onChange={(event) => setEligibility((values) => ({ ...values, [student.id]: event.target.value }))} style={{ maxWidth: 180 }}>
