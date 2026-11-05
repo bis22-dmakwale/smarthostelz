@@ -3,6 +3,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { publicAppUrl } from "@/lib/site-url";
 
 /* -------------------------------------------------------------------------- */
 /*  Transport (Gmail / any SMTP via SMTP_* env vars)                          */
@@ -25,7 +26,7 @@ function transport() {
 }
 
 export function appUrl() {
-  return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return publicAppUrl;
 }
 
 type Mail = { to: string | string[]; subject: string; text: string; html: string };

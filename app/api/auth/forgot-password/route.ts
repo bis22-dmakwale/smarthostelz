@@ -3,6 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { passwordResetTokens, users } from "@/lib/db/schema";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { publicAppUrl } from "@/lib/site-url";
 
 const TOKEN_MINUTES = 30;
 const GENERIC = { ok: true, message: "If an account exists for that email, a reset link has been sent." };
@@ -30,8 +31,7 @@ export async function POST(request: Request) {
         tokenHash: createHash("sha256").update(token).digest("hex"),
         expiresAt: new Date(Date.now() + TOKEN_MINUTES * 60_000),
       });
-      const base = (process.env.APP_URL ?? new URL(request.url).origin).replace(/\/$/, "");
-      await sendPasswordResetEmail(user.email, user.name, `${base}/reset-password?token=${token}`)
+      await sendPasswordResetEmail(user.email, user.name, `${publicAppUrl}/reset-password?token=${token}`)
         .catch((error) => console.error("Password reset email failed:", error));
     }
   } catch (error) {

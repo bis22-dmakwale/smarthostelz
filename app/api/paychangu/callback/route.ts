@@ -1,5 +1,6 @@
 import { settlePaychanguPayment } from "@/lib/rent-payments";
 import { verifyWebhookSignature } from "@/lib/paychangu";
+import { publicAppUrl } from "@/lib/site-url";
 
 /**
  * PayChangu `callback_url`.
@@ -10,7 +11,7 @@ import { verifyWebhookSignature } from "@/lib/paychangu";
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const txRef = params.get("tx_ref") ?? params.get("txRef") ?? "";
-  const target = new URL("https://smarthostelz.vercel.app/student/dashboard");
+  const target = new URL(`${publicAppUrl}/student/dashboard`);
   if (txRef) {
     try {
       const result = await settlePaychanguPayment(txRef);

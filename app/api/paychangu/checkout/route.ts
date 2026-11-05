@@ -4,9 +4,9 @@ import { getDb } from "@/lib/db";
 import { bookingApplications, bookingSettings, hostelBookingPayments, paychanguPayments, roomAssignments } from "@/lib/db/schema";
 import { requireUser } from "@/lib/server-auth";
 import { PaychanguError, createCheckout, isPaychanguConfigured } from "@/lib/paychangu";
+import { publicAppUrl } from "@/lib/site-url";
 
 const monthIndex = (month: string) => Number(month.slice(0, 4)) * 12 + Number(month.slice(5, 7)) - 1;
-const publicAppUrl = "https://smarthostelz.vercel.app";
 
 /** Starts a PayChangu hosted checkout for one month of the signed-in student's hostel rent. */
 export async function POST(request: Request) {

@@ -32,7 +32,7 @@
 			"command": "node.exe",
 			"args": [
 				"-e",
-				"fetch('http://localhost:3000/api/health').then(async response => console.log(response.status, await response.text())).catch(error => console.error(error.message))"
+				"fetch('https://smarthostelz.vercel.app/api/health').then(async response => console.log(response.status, await response.text())).catch(error => console.error(error.message))"
 			],
 			"isBackground": false,
 			"problemMatcher": []
@@ -46,7 +46,7 @@
 				"--show-error",
 				"--write-out",
 				"\\nHTTP %{http_code}\\n",
-				"http://localhost:3000/api/health"
+				"https://smarthostelz.vercel.app/api/health"
 			],
 			"isBackground": false,
 			"problemMatcher": []

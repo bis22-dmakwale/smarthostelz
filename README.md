@@ -62,11 +62,11 @@ If SMTP is not configured or rejects the message, creating a student account is 
 
 ## Online rent payments (PayChangu)
 
-Students pay from the **Payments** tab. Set `PAYCHANGU_SECRET_KEY` (test key for the prototype) and `APP_URL`, then run `npm run db:migrate`.
+Students pay from the **Payments** tab. Set `PAYCHANGU_SECRET_KEY` (test key for the prototype) and run `npm run db:migrate`.
 
 Flow: `POST /api/paychangu/checkout` → PayChangu hosted checkout → redirect to `/api/paychangu/callback` (and/or webhook `POST` to the same URL) → the server **re-verifies the transaction with PayChangu** (status, amount, currency, reference) → rent for that month is recorded, the student gets a receipt email and admins are notified. Settlement is idempotent, so the webhook, redirect and "Check status" button can all fire safely.
 
-On localhost the browser redirect still completes the payment; to receive real webhooks, expose the app (e.g. `ngrok http 3000`), set `APP_URL` to the public URL and add `<APP_URL>/api/paychangu/callback` as the webhook URL in the PayChangu dashboard.
+The deployed callback URL is `https://smarthostelz.vercel.app/api/paychangu/callback`; add it as the webhook URL in the PayChangu dashboard.
 
 ## API resources
 
